@@ -53,6 +53,58 @@ def _write_partitioned(frames: dict[date, pd.DataFrame], root: Path, name: str) 
     return total
 
 
+def _realised_demand(
+    cfg: Config,
+    employees: pd.DataFrame,
+    truth_frames: dict[date, pd.DataFrame],
+    holidays_by_day: dict[date, set[str]],
+) -> pd.DataFrame:
+    """Desks consumed per allocation unit per day, with day eligibility.
+
+    A day is eligible for sizing if it is one of the team's office weekdays and
+    the unit's country was not on public holiday. Holidays and non-office days
+    carry zero demand by construction; leaving them in drags the percentile
+    toward zero and would plant a requirement nobody could meet.
+    """
+    lookup = employees.set_index("emp_id")
+    country_of_city = {c.name: c.country for c in cfg.cities}
+    team_days = {
+        emp: set(days)
+        for emp, days in zip(
+            employees["emp_id"], employees["team_scheduled_weekdays"], strict=True
+        )
+    }
+
+    rows: list[pd.DataFrame] = []
+    for day, truth in truth_frames.items():
+        if truth.empty:
+            continue
+        frame = truth.copy()
+        frame["weekday"] = day.weekday()
+        frame = frame.join(
+            lookup[["dept_l4", "workplace_code", "floor", "city"]], on="emp_id"
+        )
+        frame["country"] = frame["city"].map(country_of_city)
+        holiday_countries = holidays_by_day.get(day, set())
+        frame["is_eligible"] = [
+            (day.weekday() in team_days.get(emp, set()))
+            and (country not in holiday_countries)
+            for emp, country in zip(frame["emp_id"], frame["country"], strict=True)
+        ]
+        rows.append(frame)
+
+    combined = pd.concat(rows, ignore_index=True)
+    return (
+        combined.groupby(
+            ["dept_l4", "workplace_code", "floor", "local_date", "weekday"], as_index=False
+        )
+        .agg(
+            desks_consumed=("truth_attended", "sum"),
+            is_eligible=("is_eligible", "any"),
+        )
+    )
+
+
 def generate_all(cfg: Config | None = None, clean: bool = True) -> dict:
     cfg = cfg or load_config()
     if clean:
@@ -85,12 +137,6 @@ def generate_all(cfg: Config | None = None, clean: bool = True) -> dict:
     )
     counts["hr_roster"] = _write(roster, RAW_DIR, "hr_roster")
     counts["team_seating"] = _write(seating, RAW_DIR, "team_seating")
-
-    allocation = generate_allocation(cfg, employees, estate)
-    counts["desk_allocation"] = _write(
-        allocation[PUBLISHED_COLUMNS], RAW_DIR, "desk_allocation"
-    )
-    _write(allocation, TRUTH_DIR, "allocation_truth")
 
     holidays = generate_holidays(cfg)
     counts["public_holidays"] = _write(holidays, RAW_DIR, "public_holidays")
@@ -145,6 +191,15 @@ def generate_all(cfg: Config | None = None, clean: bool = True) -> dict:
 
     counts["badge_taps"] = _write_partitioned(tap_frames, RAW_DIR, "badge_taps")
     _write_partitioned(truth_frames, TRUTH_DIR, "employee_day_truth")
+
+    # Allocation is sized AFTER attendance, from the demand the simulator
+    # actually realised. Sizing it beforehand from attendance propensities
+    # assumed nobody is ever on leave, which put the planted requirement
+    # permanently above anything badge evidence could support.
+    daily_demand = _realised_demand(cfg, employees, truth_frames, holidays_by_day)
+    allocation = generate_allocation(cfg, employees, estate, daily_demand)
+    counts["desk_allocation"] = _write(allocation[PUBLISHED_COLUMNS], RAW_DIR, "desk_allocation")
+    _write(allocation, TRUTH_DIR, "allocation_truth")
 
     bookings = pd.DataFrame(generator.booking_rows)
     counts["desk_bookings"] = _write(bookings, RAW_DIR, "desk_bookings")
