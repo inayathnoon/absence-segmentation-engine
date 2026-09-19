@@ -33,7 +33,9 @@ def generate_estate(cfg: Config) -> pd.DataFrame:
             code = f"WP{seq:03d}"
             n_floors = int(rng.integers(floor_cfg["min"], floor_cfg["max"] + 1))
             cost = float(
-                lognormal_from_mean(rng, cost_cfg["mean"] * city.cost_index, cost_cfg["sigma"], 1)[0]
+                lognormal_from_mean(rng, cost_cfg["mean"] * city.cost_index, cost_cfg["sigma"], 1)[
+                    0
+                ]
             )
             for floor in range(1, n_floors + 1):
                 rows.append(

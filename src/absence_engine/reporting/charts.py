@@ -47,8 +47,9 @@ def _style(ax, title: str, subtitle: str = "") -> None:
         # Placed below the title, not on top of it. imshow axes report a
         # different height than bar axes, so a shared offset collides on one
         # of them; the padding is set to clear the taller case.
-        ax.text(0, 1.035, subtitle, transform=ax.transAxes, fontsize=9.5, color=INK_MUTED,
-                va="bottom")
+        ax.text(
+            0, 1.035, subtitle, transform=ax.transAxes, fontsize=9.5, color=INK_MUTED, va="bottom"
+        )
 
 
 def _save(fig, name: str):
@@ -72,9 +73,10 @@ def chart_waterfall(cfg: Config):
     result = compute_recovery(cfg)
     con = duckdb.connect(str(WAREHOUSE_PATH), read_only=True)
     try:
-        delivered = con.execute(
+        row = con.execute(
             "select sum(delivered_workstations) from main_marts.dim_workplace"
-        ).fetchone()[0]
+        ).fetchone()
+        delivered = (row[0] if row else 0) or 0
     finally:
         con.close()
 
@@ -96,14 +98,22 @@ def chart_waterfall(cfg: Config):
     xs = range(len(steps))
     values = [v for _, v in steps]
     ax.bar(xs, values, color=SEQUENTIAL[1:6], width=0.62, edgecolor=SURFACE, linewidth=2)
-    for x, (label, value) in zip(xs, steps, strict=True):
-        ax.text(x, value + max(values) * 0.015, f"{value:,}", ha="center", fontsize=10,
-                color=INK_MUTED)
+    for x, (_, value) in zip(xs, steps, strict=True):
+        ax.text(
+            x, value + max(values) * 0.015, f"{value:,}", ha="center", fontsize=10, color=INK_MUTED
+        )
 
     # The recoverable slice, drawn on the allocated bar it comes out of.
-    ax.bar([1], [recoverable], bottom=[steps[1][1] - recoverable], width=0.62,
-           color=SERIES[1], edgecolor=SURFACE, linewidth=2,
-           label=f"Recoverable: {recoverable:,} desks (allocated - required)")
+    ax.bar(
+        [1],
+        [recoverable],
+        bottom=[steps[1][1] - recoverable],
+        width=0.62,
+        color=SERIES[1],
+        edgecolor=SURFACE,
+        linewidth=2,
+        label=f"Recoverable: {recoverable:,} desks (allocated - required)",
+    )
     ax.set_xticks(list(xs))
     ax.set_xticklabels([label for label, _ in steps])
     ax.set_ylabel("workstations", color=INK_MUTED, fontsize=9.5)
@@ -161,8 +171,14 @@ def chart_planned_vs_optimizable(cfg: Config):
         "An empty desk is only waste when the absence was avoidable. The blue "
         "band is absence no decision follows from.",
     )
-    ax.legend(frameon=False, fontsize=9.5, loc="upper center", ncol=3,
-              bbox_to_anchor=(0.5, -0.16), labelcolor=INK_MUTED)
+    ax.legend(
+        frameon=False,
+        fontsize=9.5,
+        loc="upper center",
+        ncol=3,
+        bbox_to_anchor=(0.5, -0.16),
+        labelcolor=INK_MUTED,
+    )
     fig.autofmt_xdate(rotation=30, ha="right")
     return _save(fig, "planned_vs_optimizable.png")
 
@@ -192,16 +208,24 @@ def chart_sensitivity(cfg: Config):
     for i in range(len(grid.index)):
         for j in range(len(grid.columns)):
             value = grid.to_numpy()[i, j]
-            ax.text(j, i, f"{value:.1%}", ha="center", va="center", fontsize=9,
-                    color="white" if value > grid.to_numpy().mean() else INK)
+            ax.text(
+                j,
+                i,
+                f"{value:.1%}",
+                ha="center",
+                va="center",
+                fontsize=9,
+                color="white" if value > grid.to_numpy().mean() else INK,
+            )
 
     chosen = (
         list(grid.index).index(cfg.capacity.demand_percentile),
         list(grid.columns).index(cfg.capacity.buffer),
     )
     ax.add_patch(
-        plt.Rectangle((chosen[1] - 0.5, chosen[0] - 0.5), 1, 1, fill=False,
-                      edgecolor=SERIES[1], linewidth=3)
+        plt.Rectangle(
+            (chosen[1] - 0.5, chosen[0] - 0.5), 1, 1, fill=False, edgecolor=SERIES[1], linewidth=3
+        )
     )
     fig.colorbar(image, ax=ax, label="recovery rate")
     _style(
@@ -226,16 +250,42 @@ def chart_city_opportunity(cfg: Config):
     fig, ax = plt.subplots(figsize=(10, 5.4))
     x = np.arange(len(frame))
     width = 0.38
-    ax.bar(x - width / 2, frame["planted"], width, label="Planted (simulator)",
-           color=SERIES[0], edgecolor=SURFACE, linewidth=2)
-    ax.bar(x + width / 2, frame["recovered"], width, label="Recovered (pipeline)",
-           color=SERIES[1], edgecolor=SURFACE, linewidth=2)
+    ax.bar(
+        x - width / 2,
+        frame["planted"],
+        width,
+        label="Planted (simulator)",
+        color=SERIES[0],
+        edgecolor=SURFACE,
+        linewidth=2,
+    )
+    ax.bar(
+        x + width / 2,
+        frame["recovered"],
+        width,
+        label="Recovered (pipeline)",
+        color=SERIES[1],
+        edgecolor=SURFACE,
+        linewidth=2,
+    )
     top = max(frame["planted"].max(), frame["recovered"].max())
     for i, row in enumerate(frame.itertuples(index=False)):
-        ax.text(i - width / 2, row.planted + top * 0.02, f"{int(row.planted)}", ha="center",
-                fontsize=8.5, color=INK_MUTED)
-        ax.text(i + width / 2, row.recovered + top * 0.02, f"{int(row.recovered)}", ha="center",
-                fontsize=8.5, color=INK_MUTED)
+        ax.text(
+            i - width / 2,
+            row.planted + top * 0.02,
+            f"{int(row.planted)}",
+            ha="center",
+            fontsize=8.5,
+            color=INK_MUTED,
+        )
+        ax.text(
+            i + width / 2,
+            row.recovered + top * 0.02,
+            f"{int(row.recovered)}",
+            ha="center",
+            fontsize=8.5,
+            color=INK_MUTED,
+        )
 
     ax.set_xticks(x)
     ax.set_xticklabels(frame["city"], rotation=30, ha="right")
@@ -257,19 +307,46 @@ def chart_city_opportunity(cfg: Config):
 def chart_o2_calibration(cfg: Config):
     sweep = o2_calibration(cfg)
     fig, ax = plt.subplots(figsize=(9, 4.8))
-    ax.plot(sweep["baseline_multiple"], sweep["precision"], marker="o", markersize=8,
-            linewidth=2, color=SERIES[0], label="Precision")
-    ax.plot(sweep["baseline_multiple"], sweep["recall"], marker="s", markersize=8,
-            linewidth=2, color=SERIES[1], label="Recall")
-    ax.plot(sweep["baseline_multiple"], sweep["f1"], marker="^", markersize=8,
-            linewidth=2, color=SERIES[2], label="F1")
+    ax.plot(
+        sweep["baseline_multiple"],
+        sweep["precision"],
+        marker="o",
+        markersize=8,
+        linewidth=2,
+        color=SERIES[0],
+        label="Precision",
+    )
+    ax.plot(
+        sweep["baseline_multiple"],
+        sweep["recall"],
+        marker="s",
+        markersize=8,
+        linewidth=2,
+        color=SERIES[1],
+        label="Recall",
+    )
+    ax.plot(
+        sweep["baseline_multiple"],
+        sweep["f1"],
+        marker="^",
+        markersize=8,
+        linewidth=2,
+        color=SERIES[2],
+        label="F1",
+    )
 
     best = sweep.loc[sweep["f1"].idxmax()]
     ax.axvline(best["baseline_multiple"], color=INK_MUTED, linestyle=":", linewidth=1.4)
-    ax.text(best["baseline_multiple"], 0.83, f"  configured: {best['baseline_multiple']}",
-            fontsize=9, color=INK)
-    ax.set_xlabel("O2 threshold, as a multiple of the team's own no-show rate",
-                  color=INK_MUTED, fontsize=9.5)
+    ax.text(
+        best["baseline_multiple"],
+        0.83,
+        f"  configured: {best['baseline_multiple']}",
+        fontsize=9,
+        color=INK,
+    )
+    ax.set_xlabel(
+        "O2 threshold, as a multiple of the team's own no-show rate", color=INK_MUTED, fontsize=9.5
+    )
     ax.set_ylim(0, 0.9)
     ax.grid(axis="y", color=GRID, alpha=0.6, linewidth=0.8)
     _style(
@@ -306,8 +383,15 @@ def chart_confusion(cfg: Config):
     for i in range(values.shape[0]):
         for j in range(values.shape[1]):
             if values[i, j] >= 0.005:
-                ax.text(j, i, f"{values[i, j]:.2f}", ha="center", va="center", fontsize=7.5,
-                        color="white" if values[i, j] > 0.55 else INK)
+                ax.text(
+                    j,
+                    i,
+                    f"{values[i, j]:.2f}",
+                    ha="center",
+                    va="center",
+                    fontsize=7.5,
+                    color="white" if values[i, j] > 0.55 else INK,
+                )
     fig.colorbar(image, ax=ax, label="share of planted label")
     _style(
         ax,

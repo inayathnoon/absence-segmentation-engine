@@ -1,0 +1,30 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        exclude: ^dbt/target/
+      - id: check-added-large-files
+        args: [--maxkb=600]
+      - id: check-merge-conflict
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      # A threshold that means one thing in conf/sim.yaml and another in
+      # dbt_project.yml produces two defensible taxonomies and no way to
+      # choose. Cheapest to catch in the commit that causes it.
+      - id: thresholds-agree
+        name: taxonomy thresholds agree between config and dbt
+        entry: .venv/bin/pytest -q tests/test_config.py -k thresholds
+        language: system
+        pass_filenames: false
+        files: ^(conf/sim\.yaml|dbt/dbt_project\.yml)$

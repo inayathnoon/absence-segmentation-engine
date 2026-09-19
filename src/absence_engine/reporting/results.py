@@ -6,35 +6,66 @@ else is context for that.
 
 from __future__ import annotations
 
-import json
-
 import duckdb
 
 from ..capacity.grading import grade, o2_calibration
 from ..capacity.model import bootstrap_recovery_ci, compute_recovery
-from ..config import GROUND_TRUTH, WAREHOUSE_PATH, Config, load_config
+from ..config import WAREHOUSE_PATH, Config, load_config
 
 LAYERS = {
-    "raw": ["estate_floor", "hr_roster", "badge_taps", "leave_requests", "travel_bookings",
-            "assignments", "public_holidays", "desk_allocation", "desk_bookings",
-            "team_seating"],
-    "main_staging": ["stg_estate_floor", "stg_hr_roster", "stg_hr_employee", "stg_badge_taps",
-                     "stg_leave_requests", "stg_travel_bookings", "stg_assignments",
-                     "stg_public_holidays", "stg_desk_allocation", "stg_desk_bookings"],
-    "main_intermediate": ["int_date_spine", "int_calendar", "int_leave_days", "int_travel_days",
-                          "int_assignment_days", "int_tap_day", "int_employee_pattern",
-                          "int_employee_day_base", "int_employee_day"],
-    "main_marts": ["dim_workplace", "dim_employee", "fct_absence_segmentation_daily",
-                   "fct_allocation_unit_daily"],
+    "raw": [
+        "estate_floor",
+        "hr_roster",
+        "badge_taps",
+        "leave_requests",
+        "travel_bookings",
+        "assignments",
+        "public_holidays",
+        "desk_allocation",
+        "desk_bookings",
+        "team_seating",
+    ],
+    "main_staging": [
+        "stg_estate_floor",
+        "stg_hr_roster",
+        "stg_hr_employee",
+        "stg_badge_taps",
+        "stg_leave_requests",
+        "stg_travel_bookings",
+        "stg_assignments",
+        "stg_public_holidays",
+        "stg_desk_allocation",
+        "stg_desk_bookings",
+    ],
+    "main_intermediate": [
+        "int_date_spine",
+        "int_calendar",
+        "int_leave_days",
+        "int_travel_days",
+        "int_assignment_days",
+        "int_tap_day",
+        "int_employee_pattern",
+        "int_employee_day_base",
+        "int_employee_day",
+    ],
+    "main_marts": [
+        "dim_workplace",
+        "dim_employee",
+        "fct_absence_segmentation_daily",
+        "fct_allocation_unit_daily",
+    ],
 }
 
 
 def render(cfg: Config) -> str:
     out: list[str] = []
     rule = "=" * 80
-    out += [rule,
-            f"absence-segmentation-engine  |  profile: {cfg.profile_name}  |  seed: {cfg.seed}",
-            f"window: {cfg.start_date} to {cfg.end_date}", rule]
+    out += [
+        rule,
+        f"absence-segmentation-engine  |  profile: {cfg.profile_name}  |  seed: {cfg.seed}",
+        f"window: {cfg.start_date} to {cfg.end_date}",
+        rule,
+    ]
 
     con = duckdb.connect(str(WAREHOUSE_PATH), read_only=True)
     try:
@@ -73,22 +104,27 @@ def render(cfg: Config) -> str:
 
     result = compute_recovery(cfg)
     point, low, high = bootstrap_recovery_ci(result.units)
-    truth = json.loads(GROUND_TRUTH.read_text())["allocation"]
 
     out.append("\nRECOVERABLE CAPACITY")
     out.append(f"  allocated workstations        {result.totals['allocated_workstations']:>12,}")
-    out.append(f"  required at P{int(cfg.capacity.demand_percentile * 100)} "
-               f"+ {cfg.capacity.buffer:.0%} buffer  {result.totals['required_workstations']:>12,}")
+    out.append(
+        f"  required at P{int(cfg.capacity.demand_percentile * 100)} "
+        f"+ {cfg.capacity.buffer:.0%} buffer  {result.totals['required_workstations']:>12,}"
+    )
     out.append(f"  recoverable                   {result.totals['recoverable_workstations']:>12,}")
-    out.append(f"  recovery rate                 {point:>11.2%}  "
-               f"(95% CI {low:.2%} to {high:.2%}, bootstrapped over allocation units)")
+    out.append(
+        f"  recovery rate                 {point:>11.2%}  "
+        f"(95% CI {low:.2%} to {high:.2%}, bootstrapped over allocation units)"
+    )
     out.append(f"  estimated monthly saving      {result.totals['monthly_saving']:>12,.0f}")
     out.append(f"  under-sized units flagged     {result.totals['undersized_units']:>12,}")
 
     scored = grade(cfg)
     out.append("\nPLANTED VS RECOVERED - recoverable workstations")
-    out.append(f"  {'estimator':12s} {'planted':>9s} {'recovered':>10s} {'error':>8s} "
-               f"{'planted saving':>16s} {'recovered saving':>18s}")
+    out.append(
+        f"  {'estimator':12s} {'planted':>9s} {'recovered':>10s} {'error':>8s} "
+        f"{'planted saving':>16s} {'recovered saving':>18s}"
+    )
     for row in scored.recovery.itertuples(index=False):
         out.append(
             f"  {row.estimator:12s} {int(row.planted_workstations):>9,} "

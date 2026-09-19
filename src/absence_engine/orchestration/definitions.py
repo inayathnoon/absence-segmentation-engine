@@ -58,8 +58,11 @@ daily_partitions = DailyPartitionsDefinition(
 SEGMENTATION_DIR = OUT_DIR / "segmentation"
 
 
-@asset(group_name="sources", compute_kind="python",
-       description="Ten synthetic source extracts plus the truth set.")
+@asset(
+    group_name="sources",
+    compute_kind="python",
+    description="Ten synthetic source extracts plus the truth set.",
+)
 def source_data(context: AssetExecutionContext) -> Output[dict]:
     cfg = load_config()
     result = generate_all(cfg)
@@ -76,20 +79,31 @@ def source_data(context: AssetExecutionContext) -> Output[dict]:
     )
 
 
-@asset(group_name="warehouse", deps=[source_data], compute_kind="duckdb",
-       description="Raw extracts loaded into DuckDB under Pandera contracts.")
+@asset(
+    group_name="warehouse",
+    deps=[source_data],
+    compute_kind="duckdb",
+    description="Raw extracts loaded into DuckDB under Pandera contracts.",
+)
 def warehouse_raw(context: AssetExecutionContext) -> Output[dict]:
     results = load_raw()
     rows = {r.table: r.rows for r in results}
     return Output(rows, metadata={"rows": MetadataValue.json(rows)})
 
 
-@asset(group_name="warehouse", deps=[warehouse_raw], compute_kind="dbt",
-       description="dbt staging, intermediate and mart models, with their tests.")
+@asset(
+    group_name="warehouse",
+    deps=[warehouse_raw],
+    compute_kind="dbt",
+    description="dbt staging, intermediate and mart models, with their tests.",
+)
 def dbt_models(context: AssetExecutionContext) -> Output[dict]:
     proc = subprocess.run(
         ["dbt", "build", "--profiles-dir", "."],
-        cwd=DBT_DIR, capture_output=True, text=True, check=False,
+        cwd=DBT_DIR,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     tail = "\n".join(proc.stdout.strip().splitlines()[-20:])
     if proc.returncode != 0:
@@ -151,8 +165,12 @@ def segmentation_daily(context: AssetExecutionContext) -> Output[dict]:
     )
 
 
-@asset(group_name="capacity", deps=[dbt_models], compute_kind="python",
-       description="Recoverable capacity, savings, and the grade against planted truth.")
+@asset(
+    group_name="capacity",
+    deps=[dbt_models],
+    compute_kind="python",
+    description="Recoverable capacity, savings, and the grade against planted truth.",
+)
 def recovery_model(context: AssetExecutionContext) -> Output[dict]:
     cfg = load_config()
     result = compute_recovery(cfg)
@@ -183,8 +201,12 @@ def recovery_model(context: AssetExecutionContext) -> Output[dict]:
     )
 
 
-@asset(group_name="reporting", deps=[recovery_model], compute_kind="python",
-       description="Per-role weekly reports in HTML and PDF.")
+@asset(
+    group_name="reporting",
+    deps=[recovery_model],
+    compute_kind="python",
+    description="Per-role weekly reports in HTML and PDF.",
+)
 def weekly_reports(context: AssetExecutionContext) -> Output[dict]:
     artifacts = generate_weekly_reports()
     return Output(
@@ -196,8 +218,12 @@ def weekly_reports(context: AssetExecutionContext) -> Output[dict]:
     )
 
 
-@asset(group_name="reporting", deps=[recovery_model], compute_kind="python",
-       description="README charts.")
+@asset(
+    group_name="reporting",
+    deps=[recovery_model],
+    compute_kind="python",
+    description="README charts.",
+)
 def charts(context: AssetExecutionContext) -> Output[dict]:
     paths = render_all()
     return Output(

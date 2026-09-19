@@ -70,9 +70,7 @@ def _realised_demand(
     country_of_city = {c.name: c.country for c in cfg.cities}
     team_days = {
         emp: set(days)
-        for emp, days in zip(
-            employees["emp_id"], employees["team_scheduled_weekdays"], strict=True
-        )
+        for emp, days in zip(employees["emp_id"], employees["team_scheduled_weekdays"], strict=True)
     }
 
     rows: list[pd.DataFrame] = []
@@ -81,27 +79,21 @@ def _realised_demand(
             continue
         frame = truth.copy()
         frame["weekday"] = day.weekday()
-        frame = frame.join(
-            lookup[["dept_l4", "workplace_code", "floor", "city"]], on="emp_id"
-        )
+        frame = frame.join(lookup[["dept_l4", "workplace_code", "floor", "city"]], on="emp_id")
         frame["country"] = frame["city"].map(country_of_city)
         holiday_countries = holidays_by_day.get(day, set())
         frame["is_eligible"] = [
-            (day.weekday() in team_days.get(emp, set()))
-            and (country not in holiday_countries)
+            (day.weekday() in team_days.get(emp, set())) and (country not in holiday_countries)
             for emp, country in zip(frame["emp_id"], frame["country"], strict=True)
         ]
         rows.append(frame)
 
     combined = pd.concat(rows, ignore_index=True)
-    return (
-        combined.groupby(
-            ["dept_l4", "workplace_code", "floor", "local_date", "weekday"], as_index=False
-        )
-        .agg(
-            desks_consumed=("truth_attended", "sum"),
-            is_eligible=("is_eligible", "any"),
-        )
+    return combined.groupby(
+        ["dept_l4", "workplace_code", "floor", "local_date", "weekday"], as_index=False
+    ).agg(
+        desks_consumed=("truth_attended", "sum"),
+        is_eligible=("is_eligible", "any"),
     )
 
 
@@ -158,9 +150,11 @@ def generate_all(cfg: Config | None = None, clean: bool = True) -> dict:
         "return_date",
         ["destination_city"],
     )
-    assignment_days = expand_spans(
-        assignments, "start_date", "end_date", ["assignment_city"]
-    ) if not assignments.empty else {}
+    assignment_days = (
+        expand_spans(assignments, "start_date", "end_date", ["assignment_city"])
+        if not assignments.empty
+        else {}
+    )
 
     leave_by_day: dict[date, set[str]] = defaultdict(set)
     for emp, day in leave_days:
@@ -204,7 +198,7 @@ def generate_all(cfg: Config | None = None, clean: bool = True) -> dict:
     bookings = pd.DataFrame(generator.booking_rows)
     counts["desk_bookings"] = _write(bookings, RAW_DIR, "desk_bookings")
 
-    ground_truth = {
+    ground_truth: dict = {
         "profile": cfg.profile_name,
         "seed": cfg.seed,
         "start_date": cfg.start_date.isoformat(),
@@ -228,15 +222,21 @@ def generate_all(cfg: Config | None = None, clean: bool = True) -> dict:
                 for k, v in allocation.groupby("city")["truth_excess_workstations"].sum().items()
             },
             "monthly_saving_by_city": {
-                str(city): round(float(group["truth_excess_workstations"].mul(
-                    group["cost_per_workstation_month"]
-                ).sum()), 2)
+                str(city): round(
+                    float(
+                        group["truth_excess_workstations"]
+                        .mul(group["cost_per_workstation_month"])
+                        .sum()
+                    ),
+                    2,
+                )
                 for city, group in allocation.groupby("city")
             },
         },
     }
-    ground_truth["allocation"]["monthly_saving_total"] = round(
-        sum(ground_truth["allocation"]["monthly_saving_by_city"].values()), 2
+    allocation_truth: dict = ground_truth["allocation"]
+    allocation_truth["monthly_saving_total"] = round(
+        sum(allocation_truth["monthly_saving_by_city"].values()), 2
     )
     GROUND_TRUTH.parent.mkdir(parents=True, exist_ok=True)
     GROUND_TRUTH.write_text(json.dumps(ground_truth, indent=2, sort_keys=True))

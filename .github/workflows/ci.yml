@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      # --frozen installs exactly what uv.lock pins and fails if the lock has
+      # drifted from pyproject.toml.
+      - name: Install the project
+        run: |
+          uv venv --python 3.11
+          uv sync --frozen --extra dev
+
+      - name: Lint
+        run: |
+          .venv/bin/ruff check src tests app
+          .venv/bin/ruff format --check src tests app
+
+      - name: Types
+        run: .venv/bin/mypy src
+
+      # The pipeline runs before the tests because most of the suite asserts
+      # against the built warehouse.
+      - name: Run the pipeline end to end
+        run: make demo
+
+      - name: Tests
+        run: .venv/bin/pytest -q
+
+      - name: Upload charts and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: artefacts
+          path: |
+            docs/img/
+            out/reports/
+          if-no-files-found: warn

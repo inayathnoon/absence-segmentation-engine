@@ -57,23 +57,24 @@ def _role_frame(role: Role, scope_value: str | None, cfg: Config) -> pd.DataFram
             units.drop_duplicates("city").set_index("city")["region"]
         )
     elif role is Role.REGIONAL_LEAD:
-        frame = (
-            units.groupby(["region", "city", "workplace_code"], as_index=False)
-            .agg(
-                allocated_workstations=("allocated_workstations", "sum"),
-                required_workstations=("required_workstations", "sum"),
-                recoverable_workstations=("recoverable_workstations", "sum"),
-                monthly_saving=("monthly_saving", "sum"),
-                o1_no_show=("o1_no_show", "sum"),
-                o2_unreported=("o2_unreported", "sum"),
-            )
+        frame = units.groupby(["region", "city", "workplace_code"], as_index=False).agg(
+            allocated_workstations=("allocated_workstations", "sum"),
+            required_workstations=("required_workstations", "sum"),
+            recoverable_workstations=("recoverable_workstations", "sum"),
+            monthly_saving=("monthly_saving", "sum"),
+            o1_no_show=("o1_no_show", "sum"),
+            o2_unreported=("o2_unreported", "sum"),
         )
         frame["recovery_rate"] = (
             frame["recoverable_workstations"] / frame["allocated_workstations"]
         ).round(4)
-        optimizable = units.groupby("workplace_code")[
-            ["o1_no_show", "o2_unreported", "o3_partial", "o4_booked_not_used"]
-        ].sum().sum(axis=1)
+        optimizable = (
+            units.groupby("workplace_code")[
+                ["o1_no_show", "o2_unreported", "o3_partial", "o4_booked_not_used"]
+            ]
+            .sum()
+            .sum(axis=1)
+        )
         frame["optimizable_share"] = (
             frame["workplace_code"].map(optimizable) / frame["allocated_workstations"]
         ).round(3)
@@ -177,8 +178,13 @@ def _render_pdf(
     spec = SCOPES[role]
     with PdfPages(path) as pdf:
         fig = plt.figure(figsize=(8.27, 11.69))
-        fig.text(0.07, 0.94, f"{spec.title} — week ending {report_date.isoformat()}",
-                 fontsize=17, fontweight="bold")
+        fig.text(
+            0.07,
+            0.94,
+            f"{spec.title} — week ending {report_date.isoformat()}",
+            fontsize=17,
+            fontweight="bold",
+        )
         fig.text(0.07, 0.915, spec.question, fontsize=11, color="#52514e")
         scope_line = (
             f"Scoped to {spec.scope_column} = {scope_value}" if scope_value else "Whole estate"
@@ -193,7 +199,7 @@ def _render_pdf(
             y -= 0.075
 
         if not frame.empty:
-            axis = fig.add_axes([0.07, 0.08, 0.86, 0.38])
+            axis = fig.add_axes((0.07, 0.08, 0.86, 0.38))
             axis.axis("off")
             preview = frame.head(18)
             table = axis.table(
