@@ -70,9 +70,7 @@ class DayGenerator:
         self.chronic = self.emp["is_chronic_no_show"].to_numpy()
         self.free_sharing = self.emp["is_free_sharing"].to_numpy()
         self.shift_offset = self.emp["has_shift_offset"].to_numpy()
-        self.country = self.emp["city"].map(
-            {c.name: c.country for c in cfg.cities}
-        ).to_numpy()
+        self.country = self.emp["city"].map({c.name: c.country for c in cfg.cities}).to_numpy()
         self.timezone = self.emp["city"].map({c.name: c.tz for c in cfg.cities}).to_numpy()
 
         self.personal = np.zeros((n, 7), dtype=bool)

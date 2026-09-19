@@ -22,9 +22,13 @@ WEEKDAYS = [0, 1, 2, 3, 4]
 def _build_teams(cfg: Config, rng: np.random.Generator) -> list[dict]:
     teams: list[dict] = []
     for l1 in cfg.org.departments_l1:
-        for i2 in range(1, int(rng.integers(cfg.org.l2_per_l1["min"], cfg.org.l2_per_l1["max"] + 1)) + 1):
+        for i2 in range(
+            1, int(rng.integers(cfg.org.l2_per_l1["min"], cfg.org.l2_per_l1["max"] + 1)) + 1
+        ):
             l2 = f"{l1} Division {i2}"
-            for i3 in range(1, int(rng.integers(cfg.org.l3_per_l2["min"], cfg.org.l3_per_l2["max"] + 1)) + 1):
+            for i3 in range(
+                1, int(rng.integers(cfg.org.l3_per_l2["min"], cfg.org.l3_per_l2["max"] + 1)) + 1
+            ):
                 l3 = f"{l2} Group {i3}"
                 for i4 in range(
                     1, int(rng.integers(cfg.org.l4_per_l3["min"], cfg.org.l4_per_l3["max"] + 1)) + 1
@@ -186,9 +190,7 @@ def generate_org(cfg: Config, estate: pd.DataFrame) -> tuple[pd.DataFrame, pd.Da
         )
         for team in teams
     }
-    employees["team_scheduled_weekdays"] = [
-        team_pattern[team] for team in employees["dept_l4"]
-    ]
+    employees["team_scheduled_weekdays"] = [team_pattern[team] for team in employees["dept_l4"]]
 
     # Both patterns are kept, and that is what makes P8 a reachable state. A
     # shift-offset employee is absent on a day their team is expected in, for a

@@ -65,7 +65,9 @@ def generate_leave(cfg: Config, employees: pd.DataFrame) -> pd.DataFrame:
     starts = np.array(
         [cfg.start_date + timedelta(days=int(o)) for o in rng.integers(0, n_days, size=total)]
     )
-    ends = np.array([s + timedelta(days=int(d) - 1) for s, d in zip(starts, durations, strict=True)])
+    ends = np.array(
+        [s + timedelta(days=int(d) - 1) for s, d in zip(starts, durations, strict=True)]
+    )
     applied = [
         datetime.combine(s - timedelta(days=int(lead)), time(9, 0))
         for s, lead in zip(starts, rng.integers(1, 28, size=total), strict=True)
@@ -92,8 +94,13 @@ def generate_travel(cfg: Config, employees: pd.DataFrame) -> pd.DataFrame:
     trips = rng.binomial(n_days, tv["trip_hazard"], size=n_emp)
     total = int(trips.sum())
     columns = [
-        "booking_id", "emp_id", "origin_city", "destination_city",
-        "depart_date", "return_date", "booking_status",
+        "booking_id",
+        "emp_id",
+        "origin_city",
+        "destination_city",
+        "depart_date",
+        "return_date",
+        "booking_status",
     ]
     if total == 0:
         return pd.DataFrame(columns=columns)
@@ -101,7 +108,10 @@ def generate_travel(cfg: Config, employees: pd.DataFrame) -> pd.DataFrame:
     origins = np.repeat(employees["city"].to_numpy(), trips)
     city_names = [c.name for c in cfg.cities]
     destinations = np.array(
-        [rng.choice([c for c in city_names if c != o]) if len(city_names) > 1 else o for o in origins]
+        [
+            rng.choice([c for c in city_names if c != o]) if len(city_names) > 1 else o
+            for o in origins
+        ]
     )
     departs = np.array(
         [cfg.start_date + timedelta(days=int(o)) for o in rng.integers(0, n_days, size=total)]
@@ -138,7 +148,9 @@ def generate_assignments(cfg: Config, employees: pd.DataFrame) -> pd.DataFrame:
         options = [c for c in city_names if c != row.city]
         if not options:
             continue
-        start = cfg.start_date + timedelta(days=int(rng.integers(0, max(cfg.profile.n_days // 2, 1))))
+        start = cfg.start_date + timedelta(
+            days=int(rng.integers(0, max(cfg.profile.n_days // 2, 1)))
+        )
         rows.append(
             {
                 "assignment_id": f"AS{i:06d}",

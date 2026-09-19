@@ -113,9 +113,9 @@ def _peak_weekday_requirement(
         peak["percentile_demand"] = peak["weekday_mean"] + z * peak["weekday_sd"]
     else:
         peak["percentile_demand"] = peak["weekday_quantile"]
-    return peak[[*keys, "weekday_mon0", "weekday_mean", "weekday_sd", "weekday_n", "percentile_demand"]].rename(
-        columns={"weekday_mon0": "peak_weekday"}
-    )
+    return peak[
+        [*keys, "weekday_mon0", "weekday_mean", "weekday_sd", "weekday_n", "percentile_demand"]
+    ].rename(columns={"weekday_mon0": "peak_weekday"})
 
 
 def compute_recovery(
@@ -161,9 +161,9 @@ def compute_recovery(
         _peak_weekday_requirement(demand, keys, percentile, estimator), on=keys, how="left"
     )
 
-    units["required_workstations"] = np.ceil(
-        units["percentile_demand"] * (1 + buffer)
-    ).clip(lower=1).astype(int)
+    units["required_workstations"] = (
+        np.ceil(units["percentile_demand"] * (1 + buffer)).clip(lower=1).astype(int)
+    )
     units["recoverable_workstations"] = (
         units["allocated_workstations"] - units["required_workstations"]
     ).clip(lower=0)

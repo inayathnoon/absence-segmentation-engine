@@ -24,8 +24,18 @@ from .model import ESTIMATORS, compute_recovery
 
 LABEL_ORDER = [
     "ATTENDED",
-    "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8",
-    "O1", "O2", "O3", "O4",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6",
+    "P7",
+    "P8",
+    "O1",
+    "O2",
+    "O3",
+    "O4",
 ]
 
 
@@ -70,9 +80,7 @@ def label_grade(con: duckdb.DuckDBPyConnection) -> tuple[pd.DataFrame, pd.DataFr
 
     planted = confusion.sum(axis=1)
     predicted = confusion.sum(axis=0)
-    correct = pd.Series(
-        {label: confusion.loc[label, label] for label in LABEL_ORDER}, dtype=float
-    )
+    correct = pd.Series({label: confusion.loc[label, label] for label in LABEL_ORDER}, dtype=float)
     per_label = pd.DataFrame(
         {
             "planted": planted,
@@ -90,9 +98,7 @@ def label_grade(con: duckdb.DuckDBPyConnection) -> tuple[pd.DataFrame, pd.DataFr
     # day misfiled from O1 to O2 changes who gets a conversation; a day
     # misfiled from O1 to P1 changes whether a desk gets removed.
     pairs["truth_class"] = pairs["truth_label"].map(_truth_class)
-    class_correct = pairs.loc[
-        pairs["truth_class"] == pairs["label_class"], "employee_days"
-    ].sum()
+    class_correct = pairs.loc[pairs["truth_class"] == pairs["label_class"], "employee_days"].sum()
     class_accuracy = float(class_correct / pairs["employee_days"].sum())
     return confusion, per_label, overall, class_accuracy
 
@@ -161,7 +167,9 @@ def grade(cfg: Config | None = None) -> Grade:
 # --- O2 threshold calibration ----------------------------------------------
 
 
-def o2_calibration(cfg: Config | None = None, multiples=(1.0, 1.2, 1.4, 1.6, 1.8, 2.0)) -> pd.DataFrame:
+def o2_calibration(
+    cfg: Config | None = None, multiples=(1.0, 1.2, 1.4, 1.6, 1.8, 2.0)
+) -> pd.DataFrame:
     """Precision and recall of the O2 rule across its baseline multiple.
 
     O2 is the one rule with a threshold nobody can derive from first
@@ -210,9 +218,9 @@ def o2_calibration(cfg: Config | None = None, multiples=(1.0, 1.2, 1.4, 1.6, 1.8
                 "true_positive": true_positive,
                 "precision": round(true_positive / predicted, 3) if predicted else 0.0,
                 "recall": round(true_positive / actual, 3) if actual else 0.0,
-                "f1": round(
-                    2 * true_positive / (predicted + actual), 3
-                ) if (predicted + actual) else 0.0,
+                "f1": round(2 * true_positive / (predicted + actual), 3)
+                if (predicted + actual)
+                else 0.0,
             }
         )
     return pd.DataFrame(rows)

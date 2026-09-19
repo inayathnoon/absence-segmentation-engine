@@ -51,7 +51,9 @@ def load_raw(cfg: Config | None = None, validate: bool = True) -> list[LoadResul
                     schema.validate(pd.read_parquet(path), lazy=True)
                     validated += 1
 
-            glob = str(RAW_DIR / source / ("dt=*/*.parquet" if source in PARTITIONED else "*.parquet"))
+            glob = str(
+                RAW_DIR / source / ("dt=*/*.parquet" if source in PARTITIONED else "*.parquet")
+            )
             con.execute(f"DROP TABLE IF EXISTS raw.{source}")
             con.execute(
                 f"CREATE TABLE raw.{source} AS "
@@ -78,4 +80,7 @@ def load_raw(cfg: Config | None = None, validate: bool = True) -> list[LoadResul
 
 if __name__ == "__main__":  # pragma: no cover
     for r in load_raw():
-        print(f"raw.{r.table:20s} {r.rows:>12,} rows ({r.partitions} partitions, {r.validated} validated)")
+        print(
+            f"raw.{r.table:20s} {r.rows:>12,} rows "
+            f"({r.partitions} partitions, {r.validated} validated)"
+        )
