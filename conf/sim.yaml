@@ -1,0 +1,193 @@
+# ---------------------------------------------------------------------------
+# Simulator configuration. Every number this repository reports is a function
+# of this file: the generator plants the effects declared here, and the
+# pipeline's job is to recover them. Nothing here describes any real estate,
+# organisation or cost base.
+# ---------------------------------------------------------------------------
+
+seed: 61803
+
+profile: demo
+
+profiles:
+  # Acceptance target: a 28-day slice that runs end to end in under 3 minutes.
+  demo:
+    n_employees: 6_000
+    n_days: 28
+    n_cities: 8
+    n_workplaces: 14
+    end_date: "2025-06-29"
+
+  # The size the brief describes.
+  full:
+    n_employees: 95_000
+    n_days: 180
+    n_cities: 30
+    n_workplaces: 110
+    end_date: "2025-06-29"
+
+# ---------------------------------------------------------------------------
+# Estate. City names are invented; timezones are real IANA identifiers because
+# local dates have to be computed rather than assumed.
+# ---------------------------------------------------------------------------
+estate:
+  cities:
+    - { name: "Aldermere",  country: "Arcadia",  region: "AMER", tz: "America/New_York",    cost_index: 1.28 }
+    - { name: "Brackwater", country: "Arcadia",  region: "AMER", tz: "America/Chicago",     cost_index: 0.94 }
+    - { name: "Corvane",    country: "Albion",   region: "EMEA", tz: "Europe/London",       cost_index: 1.41 }
+    - { name: "Dunhollow",  country: "Rhenia",   region: "EMEA", tz: "Europe/Berlin",       cost_index: 1.05 }
+    - { name: "Elsmoor",    country: "Sundara",  region: "APAC", tz: "Asia/Singapore",      cost_index: 1.33 }
+    - { name: "Fennmark",   country: "Nihon-do", region: "APAC", tz: "Asia/Tokyo",          cost_index: 1.36 }
+    - { name: "Garrowfen",  country: "Kanton",   region: "APAC", tz: "Asia/Shanghai",       cost_index: 0.88 }
+    - { name: "Haverlock",  country: "Arcadia",  region: "AMER", tz: "America/Los_Angeles", cost_index: 1.31 }
+    - { name: "Inverholt",  country: "Norvik",   region: "EMEA", tz: "Europe/Stockholm",    cost_index: 1.12 }
+    - { name: "Jarrowmede", country: "Albion",   region: "EMEA", tz: "Europe/Dublin",       cost_index: 1.09 }
+    - { name: "Kelbridge",  country: "Arcadia",  region: "AMER", tz: "America/Denver",      cost_index: 0.86 }
+    - { name: "Lowenhurst", country: "Rhenia",   region: "EMEA", tz: "Europe/Vienna",       cost_index: 0.97 }
+    - { name: "Marrowdale", country: "Sundara",  region: "APAC", tz: "Asia/Kuala_Lumpur",   cost_index: 0.71 }
+    - { name: "Norvelle",   country: "Gallica",  region: "EMEA", tz: "Europe/Paris",        cost_index: 1.24 }
+    - { name: "Oakendell",  country: "Kanton",   region: "APAC", tz: "Asia/Shanghai",       cost_index: 0.83 }
+    - { name: "Pelmarsh",   country: "Bharatam", region: "APAC", tz: "Asia/Kolkata",        cost_index: 0.48 }
+    - { name: "Quarrenden", country: "Arcadia",  region: "AMER", tz: "America/Toronto",     cost_index: 1.02 }
+    - { name: "Rookhaven",  country: "Austrine", region: "APAC", tz: "Australia/Sydney",    cost_index: 1.18 }
+    - { name: "Stillwyn",   country: "Ibera",    region: "EMEA", tz: "Europe/Lisbon",       cost_index: 0.79 }
+    - { name: "Thornwick",  country: "Nihon-do", region: "APAC", tz: "Asia/Seoul",          cost_index: 1.07 }
+    - { name: "Umberfell",  country: "Levantia", region: "EMEA", tz: "Asia/Dubai",          cost_index: 1.15 }
+    - { name: "Vansgate",   country: "Arcadia",  region: "AMER", tz: "America/Phoenix",     cost_index: 0.81 }
+    - { name: "Westmere",   country: "Albion",   region: "EMEA", tz: "Europe/London",       cost_index: 1.22 }
+    - { name: "Xandermoor", country: "Hellenia", region: "EMEA", tz: "Europe/Athens",       cost_index: 0.74 }
+    - { name: "Yarrowgate", country: "Sundara",  region: "APAC", tz: "Asia/Jakarta",        cost_index: 0.58 }
+    - { name: "Zelmont",    country: "Arcadia",  region: "AMER", tz: "America/Mexico_City", cost_index: 0.66 }
+    - { name: "Ashbourne",  country: "Norvik",   region: "EMEA", tz: "Europe/Oslo",         cost_index: 1.26 }
+    - { name: "Bellhaven",  country: "Bharatam", region: "APAC", tz: "Asia/Kolkata",        cost_index: 0.51 }
+    - { name: "Calderwick", country: "Kanton",   region: "APAC", tz: "Asia/Chongqing",      cost_index: 0.69 }
+    - { name: "Dunmarrow",  country: "Rhenia",   region: "EMEA", tz: "Europe/Madrid",       cost_index: 0.91 }
+
+  floors_per_workplace: { min: 4, max: 16 }
+  # Desks per employee across the estate. Below 1.0 because a hybrid estate
+  # deliberately does not build a desk per person.
+  workstations_per_employee: 0.92
+  free_sharing_share: 0.11          # of a floor's delivered desks
+  cost_per_workstation_month: { mean: 540.0, sigma: 0.22 }
+
+# ---------------------------------------------------------------------------
+# Organisation.
+# ---------------------------------------------------------------------------
+org:
+  departments_l1: ["Engineering", "Product", "Commercial", "Operations", "Corporate"]
+  l2_per_l1: { min: 2, max: 3 }
+  l3_per_l2: { min: 2, max: 4 }
+  l4_per_l3: { min: 2, max: 5 }
+  team_size: { mean: 42, sigma: 0.7, min: 4 }
+  # A team is seated across this many floors of its home workplace.
+  floors_per_team: { min: 1, max: 3 }
+
+  employee_type_mix: { FTE: 0.80, intern: 0.05, contractor: 0.10, BPO: 0.05 }
+  tenure_days: { mean: 780, sigma: 1.0, max: 5_000 }
+  joiner_share: 0.030      # hired inside the window
+  leaver_share: 0.035      # left inside the window
+
+# ---------------------------------------------------------------------------
+# PLANTED GROUND TRUTH.
+#
+# Two kinds of plant, at two different grains, because the taxonomy has two
+# grains (see docs/decisions/0001-two-grains.md):
+#
+#   * employee-day causes  -> the P1-P8 and O1-O4 labels
+#   * allocation excess    -> the O5-O7 labels and the recoverable capacity
+# ---------------------------------------------------------------------------
+planted:
+  scheduled_days_per_week:
+    Engineering: 3
+    Product: 3
+    Commercial: 4
+    Operations: 5
+    Corporate: 4
+  weekday_weights: [0.78, 1.18, 1.28, 1.12, 0.64]
+
+  # Attendance propensity on a day the employee is expected in.
+  attendance_rate_by_region: { AMER: 0.64, EMEA: 0.60, APAC: 0.72 }
+  propensity_concentration: 11.0
+  off_schedule_attendance_rate: 0.05
+
+  # --- Planned / non-actionable causes ---
+  public_holiday_days_per_country: 3
+  leave:
+    daily_hazard: 0.016
+    duration_days: { mean: 2.6, sigma: 0.9, max: 20 }
+    type_mix: { annual: 0.54, sick: 0.23, parental: 0.06, unpaid: 0.05, comp: 0.12 }
+    status_mix: { approved: 0.89, pending: 0.06, cancelled: 0.05 }
+  travel:
+    trip_hazard: 0.0040
+    duration_days: { min: 1, max: 9 }
+    cancelled_share: 0.06
+  assignment_share: 0.022          # posted to another city for a period
+  shift_offset_share: 0.018        # works a non-standard weekday pattern
+
+  # --- Optimizable / actionable causes ---
+  # O2: a cohort with a chronic no-show pattern, over and above ordinary
+  # day-to-day variation. These are the people the O2 rule should surface.
+  chronic_no_show_share: 0.040
+  chronic_no_show_attendance_rate: 0.22
+
+  # O3: a share of attended days that are token visits.
+  partial_day_share: 0.075
+  partial_day_hours: { mean: 1.5, sigma: 0.45, max: 2.4 }
+
+  # O4: desk bookings that are never used.
+  booking_rate_free_sharing: 0.55  # of free-sharing attendees who book ahead
+  booking_no_show_share: 0.18      # of bookings never tapped against
+
+  # --- Allocation excess: the recoverable capacity, planted directly ---
+  #
+  # Each allocation unit is sized at its own P90 demand plus a buffer, then a
+  # planted excess is added on top. The pipeline has to recover that excess
+  # from attendance evidence alone.
+  allocation_excess:
+    # Share of units carrying each kind of excess, and how large it is
+    # relative to the unit's sized requirement.
+    o5_allocation_exceeds_schedule: { share: 0.22, magnitude: { mean: 0.30, sigma: 0.10 } }
+    o6_structural_oversupply:       { share: 0.18, magnitude: { mean: 0.22, sigma: 0.08 } }
+    o7_stale_allocation:            { share: 0.12, magnitude: { mean: 0.26, sigma: 0.09 } }
+    # Units that are correctly sized, or under-sized.
+    under_sized_share: 0.10
+    under_sized_magnitude: { mean: 0.12, sigma: 0.05 }
+
+# ---------------------------------------------------------------------------
+# Capacity and savings model.
+# ---------------------------------------------------------------------------
+capacity:
+  # Size to the 90th percentile of weekly demand, never the mean. See the
+  # README: sizing to the mean fails on every peak day by construction.
+  demand_percentile: 0.90
+  buffer: 0.10
+  # Policy dial: what share of the O1 (no-show) and O4 (booked-not-used)
+  # opportunity is treated as genuinely recoverable. Behaviour does not change
+  # for free, so this is deliberately well below 1.0 and is a policy input,
+  # not a measurement.
+  o1_recoverable_fraction: 0.35
+  o4_recoverable_fraction: 0.50
+  # Minimum weeks of evidence before a unit may be resized.
+  min_weeks_evidence: 2
+  # Sensitivity sweep for the heatmap.
+  sensitivity:
+    percentiles: [0.75, 0.80, 0.85, 0.90, 0.95, 0.99]
+    buffers: [0.00, 0.05, 0.10, 0.15, 0.20]
+
+# ---------------------------------------------------------------------------
+# Taxonomy thresholds. Every rule that needs a number takes it from here, so
+# the rule cascade in dbt contains no buried constants.
+# ---------------------------------------------------------------------------
+taxonomy:
+  partial_day_hours_threshold: 2.5
+  unreported_absence_window_days: 10
+  unreported_absence_min_no_shows: 3
+  headcount_decline_threshold: 0.10
+
+# ---------------------------------------------------------------------------
+# Data quality thresholds.
+# ---------------------------------------------------------------------------
+dq:
+  freshness_sla_hours: { badge_taps: 50, hr_roster: 26, leave_requests: 26, desk_bookings: 26 }
+  reconciliation_tolerance: 0.005
+  min_label_coverage: 1.0     # every employee-day must carry exactly one label

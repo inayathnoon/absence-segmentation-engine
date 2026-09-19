@@ -1,0 +1,17 @@
+# Anchored to the repo root: an unanchored directory rule matches at every
+# depth and will happily exclude a source package of the same name.
+/data/
+/warehouse/
+/out/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+/dbt/target/
+/dbt/dbt_packages/
+/dbt/logs/
+/logs/
+.DS_Store
+.env
