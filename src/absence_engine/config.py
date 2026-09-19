@@ -94,6 +94,7 @@ class Taxonomy(_Base):
     partial_day_hours_threshold: float
     unreported_absence_window_days: int
     unreported_absence_min_no_shows: int
+    unreported_absence_baseline_multiple: float
     headcount_decline_threshold: float
 
 

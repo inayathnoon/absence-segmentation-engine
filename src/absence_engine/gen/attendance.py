@@ -159,7 +159,7 @@ class DayGenerator:
             on_assignment=on_assignment,
             scheduled=scheduled,
             team_day=team_day,
-            flipped=flipped,
+            booked_not_used=booked & ~attends,
             attends=attends,
             partial=partial,
         )
@@ -198,11 +198,16 @@ class DayGenerator:
         # planned bucket and understate demand.
         labels = np.where(m["partial"], "O3", labels)
         labels = np.where(
-            m["scheduled"] & ~m["attends"] & ~m["flipped"],
+            m["scheduled"] & ~m["attends"] & ~m["booked_not_used"],
             np.where(self.chronic, "O2", "O1"),
             labels,
         )
-        labels = np.where(m["flipped"], "O4", labels)
+        # O4 is defined by evidence, not by intent: a desk booked and never
+        # used is a booked-and-unused desk whether or not the person had meant
+        # to come. Labelling only the ones the simulator deliberately flipped
+        # would make the truth narrower than any rule could ever be, and the
+        # pipeline would be marked down for being right.
+        labels = np.where(m["booked_not_used"], "O4", labels)
         labels = np.where(~m["attends"] & ~m["scheduled"] & ~m["team_day"], "P5", labels)
         labels = np.where(
             ~m["attends"] & ~m["scheduled"] & m["team_day"] & self.shift_offset, "P8", labels
