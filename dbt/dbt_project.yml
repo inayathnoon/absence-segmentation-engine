@@ -1,0 +1,35 @@
+name: absence_engine
+version: "1.0.0"
+config-version: 2
+profile: absence_engine
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  absence_engine:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+
+# Every threshold the rule cascade needs. These mirror conf/sim.yaml and are
+# checked against it by tests/test_thresholds_agree.py - a rule that means 2.5
+# hours in one file and 3.0 in another produces two defensible taxonomies.
+vars:
+  partial_day_hours_threshold: 2.5
+  unreported_absence_window_days: 10
+  unreported_absence_min_no_shows: 3
+  # O2 also requires the window rate to exceed the team's own baseline by this
+  # multiple. See int_employee_day for why an absolute threshold alone does not
+  # survive contact with a 60%-attendance estate.
+  unreported_absence_baseline_multiple: 1.6
+  off_schedule_attendance_rate: 0.05

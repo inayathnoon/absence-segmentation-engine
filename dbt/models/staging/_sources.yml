@@ -1,0 +1,59 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Landing zone for the ten source extracts, loaded under Pandera contracts
+      by src/absence_engine/warehouse/loader.py. Nothing in dbt writes here.
+      The `truth` schema also exists in this database and is deliberately not
+      declared as a source - no model may read it.
+    schema: raw
+    tables:
+      - name: estate_floor
+        columns:
+          - name: workplace_code
+            tests: [not_null]
+      - name: hr_roster
+        columns:
+          - name: emp_id
+            tests: [not_null, unique]
+      - name: badge_taps
+        columns:
+          - name: emp_id
+            tests: [not_null]
+          - name: direction
+            tests:
+              - accepted_values:
+                  values: [in, out]
+      - name: leave_requests
+        columns:
+          - name: leave_id
+            tests: [not_null, unique]
+          - name: status
+            tests:
+              - accepted_values:
+                  values: [approved, pending, cancelled]
+      - name: travel_bookings
+        columns:
+          - name: booking_id
+            tests: [not_null, unique]
+      - name: assignments
+        columns:
+          - name: assignment_id
+            tests: [not_null, unique]
+      - name: public_holidays
+        columns:
+          - name: country
+            tests: [not_null]
+      - name: desk_allocation
+        columns:
+          - name: allocated_workstations
+            tests: [not_null]
+      - name: desk_bookings
+        columns:
+          - name: booking_id
+            tests: [not_null, unique]
+      - name: team_seating
+        columns:
+          - name: dept_l4
+            tests: [not_null]

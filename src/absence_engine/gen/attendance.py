@@ -191,6 +191,11 @@ class DayGenerator:
         labels = np.full(n, ATTENDED, dtype=object)
 
         # Applied last-to-first so that earlier rules overwrite later ones.
+        #
+        # The schedule labels are gated on *not attending*. Someone who comes
+        # in on a day they were not expected has attended; calling that day
+        # "not a scheduled office day" would hide real attendance inside a
+        # planned bucket and understate demand.
         labels = np.where(m["partial"], "O3", labels)
         labels = np.where(
             m["scheduled"] & ~m["attends"] & ~m["flipped"],
@@ -198,8 +203,10 @@ class DayGenerator:
             labels,
         )
         labels = np.where(m["flipped"], "O4", labels)
-        labels = np.where(~m["scheduled"] & ~m["team_day"], "P5", labels)
-        labels = np.where(~m["scheduled"] & m["team_day"] & self.shift_offset, "P8", labels)
+        labels = np.where(~m["attends"] & ~m["scheduled"] & ~m["team_day"], "P5", labels)
+        labels = np.where(
+            ~m["attends"] & ~m["scheduled"] & m["team_day"] & self.shift_offset, "P8", labels
+        )
         labels = np.where(m["on_assignment"], "P4", labels)
         labels = np.where(m["on_travel"], "P3", labels)
         labels = np.where(m["on_leave"], "P1", labels)
