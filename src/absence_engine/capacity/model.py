@@ -266,6 +266,39 @@ def behavioural_opportunity(units: pd.DataFrame, cfg: Config) -> pd.DataFrame:
     ]
 
 
+def bootstrap_recovery_ci(
+    units: pd.DataFrame, iterations: int = 2000, level: float = 0.95, seed: int = 7
+) -> tuple[float, float, float]:
+    """Confidence interval for the estate recovery rate, by resampling units.
+
+    The uncertainty that matters here is not sampling noise on attendance - we
+    observed every day there was. It is that the estate is a finite collection
+    of allocation units, each with its own excess, and a different draw of
+    units would give a different total. So the resample is over units, which is
+    the level the estimate is actually built from.
+
+    A normal approximation would be tighter and wrong: per-unit recoverable
+    desks are floored at zero and heavily skewed, so the interval is not
+    symmetric and should not be reported as though it were.
+    """
+    rng = np.random.default_rng(seed)
+    recoverable = units["recoverable_workstations"].to_numpy(dtype=float)
+    allocated = units["allocated_workstations"].to_numpy(dtype=float)
+    n = len(units)
+    if n == 0:
+        return 0.0, 0.0, 0.0
+
+    draws = np.empty(iterations)
+    for i in range(iterations):
+        idx = rng.integers(0, n, size=n)
+        total_allocated = allocated[idx].sum()
+        draws[i] = recoverable[idx].sum() / total_allocated if total_allocated else 0.0
+
+    alpha = (1 - level) / 2
+    point = float(recoverable.sum() / allocated.sum()) if allocated.sum() else 0.0
+    return point, float(np.quantile(draws, alpha)), float(np.quantile(draws, 1 - alpha))
+
+
 def sensitivity_sweep(cfg: Config | None = None, estimator: str = "parametric") -> pd.DataFrame:
     """Recovery rate and saving across the percentile and buffer grid.
 
