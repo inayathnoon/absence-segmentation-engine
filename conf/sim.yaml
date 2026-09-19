@@ -182,6 +182,10 @@ taxonomy:
   partial_day_hours_threshold: 2.5
   unreported_absence_window_days: 10
   unreported_absence_min_no_shows: 3
+  # Chosen from the precision/recall sweep in capacity/grading.py, not by
+  # taste: 1.8 maximises F1 on the demo profile. The curve is published in
+  # docs/img/o2_calibration.png because the choice is a trade, not a fact.
+  unreported_absence_baseline_multiple: 1.8
   headcount_decline_threshold: 0.10
 
 # ---------------------------------------------------------------------------

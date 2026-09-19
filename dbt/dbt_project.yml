@@ -31,5 +31,5 @@ vars:
   # O2 also requires the window rate to exceed the team's own baseline by this
   # multiple. See int_employee_day for why an absolute threshold alone does not
   # survive contact with a 60%-attendance estate.
-  unreported_absence_baseline_multiple: 1.6
+  unreported_absence_baseline_multiple: 1.8
   off_schedule_attendance_rate: 0.05
