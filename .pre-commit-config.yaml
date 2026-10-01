@@ -9,6 +9,15 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=600]
       - id: check-merge-conflict
+      - id: check-toml
+      # Pairs with `* text=auto eol=lf` in .gitattributes: catch a stray CRLF
+      # at commit time rather than as a whole-file diff later.
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      # macOS and Linux disagree about whether Foo.py and foo.py are the same
+      # file; the repo should not depend on which one cloned it.
+      - id: check-case-conflict
+      - id: detect-private-key
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9
@@ -24,7 +33,9 @@ repos:
       # choose. Cheapest to catch in the commit that causes it.
       - id: thresholds-agree
         name: taxonomy thresholds agree between config and dbt
-        entry: .venv/bin/pytest -q tests/test_config.py -k thresholds
+        # `uv run` resolves the project environment wherever it lives, so the
+        # hook does not assume a .venv in the repo root.
+        entry: uv run --frozen --extra dev pytest -q tests/test_config.py -k thresholds
         language: system
         pass_filenames: false
         files: ^(conf/sim\.yaml|dbt/dbt_project\.yml)$
