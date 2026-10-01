@@ -33,7 +33,9 @@ repos:
       # choose. Cheapest to catch in the commit that causes it.
       - id: thresholds-agree
         name: taxonomy thresholds agree between config and dbt
-        entry: .venv/bin/pytest -q tests/test_config.py -k thresholds
+        # `uv run` resolves the project environment wherever it lives, so the
+        # hook does not assume a .venv in the repo root.
+        entry: uv run --frozen --extra dev pytest -q tests/test_config.py -k thresholds
         language: system
         pass_filenames: false
         files: ^(conf/sim\.yaml|dbt/dbt_project\.yml)$
