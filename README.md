@@ -17,14 +17,14 @@ An empty desk is not automatically waste.
 If the person it belongs to is on approved leave, travelling, posted to another city, or simply
 not expected in that day, the desk being empty is the system working as designed, and no decision
 follows from it. Waste only means something when the absence was avoidable or the allocation was
-wrong — and those are the only two cases where removing a desk is safe.
+wrong - and those are the only two cases where removing a desk is safe.
 
 Most occupancy reporting cannot tell the difference. It measures desks against headcount, finds
 that half of them are empty, and produces a number that is simultaneously true and useless: act on
 it and you take desks away from teams that need them on Wednesdays.
 
 This repo builds the taxonomy that separates the two, measures each bucket, and converts the
-optimizable portion into a defensible capacity and cost figure — with the sensitivity analysis
+optimizable portion into a defensible capacity and cost figure - with the sensitivity analysis
 that shows how much of the answer is a choice rather than a measurement.
 
 ---
@@ -91,7 +91,7 @@ weekly reporting schedule, and a freshness sensor with an alert stub.
 ### 1. The taxonomy has two grains
 
 The brief this is built from lists fifteen categories in one numbered list. Seven of them are not
-properties of an employee-day: nothing about a single Tuesday is "structurally oversupplied" — a
+properties of an employee-day: nothing about a single Tuesday is "structurally oversupplied" - a
 *team's allocation* is, across weeks. Forcing them into one grain means either inventing an
 arbitrary attribution or giving up the "exactly one label" guarantee.
 
@@ -112,16 +112,16 @@ on the row as `label_reason`.
 
 | # | Label | |
 |---|---|---|
-| 1 | **P7** post exit | *moved up* — nothing else can be true of someone who had left |
-| 2 | **P6** not yet onboarded | *moved up* — same reasoning |
-| 3 | **P2** public holiday | *above P1* — a day the office is shut is not leave anybody spent |
+| 1 | **P7** post exit | *moved up* - nothing else can be true of someone who had left |
+| 2 | **P6** not yet onboarded | *moved up* - same reasoning |
+| 3 | **P2** public holiday | *above P1* - a day the office is shut is not leave anybody spent |
 | 4 | **P1** approved leave | |
 | 5 | **P3** business travel | |
 | 6 | **P4** on assignment in another city | |
-| 7 | **O3** partial day / **ATTENDED** | *above P5* — see below |
+| 7 | **O3** partial day / **ATTENDED** | *above P5* - see below |
 | 8 | **P8** shift pattern offset | inferred |
 | 9 | **P5** not a scheduled office day | |
-| 10 | **O4** desk booked, never used | *above O1* — strictly more specific evidence |
+| 10 | **O4** desk booked, never used | *above O1* - strictly more specific evidence |
 | 11 | **O2** unreported absence | pattern rule |
 | 12 | **O1** no-show on a scheduled day | |
 
@@ -130,7 +130,7 @@ attended. Filing that as "not a scheduled office day" hides real desk demand ins
 bucket, and the capacity model then sizes the floor too small.
 
 **O4 before O1.** A booked desk never used is a no-show with a receipt. Under the brief's literal
-ordering O1 fires first and O4 is unreachable — the bucket exists and never contains anything.
+ordering O1 fires first and O4 is unreachable - the bucket exists and never contains anything.
 (ADR 2)
 
 ### 3. Two labels have to be inferred
@@ -138,7 +138,7 @@ ordering O1 fires first and O4 is unreachable — the bucket exists and never co
 Ten labels have a source record behind them. Two do not, and both were got wrong first time.
 
 **P8 (shift pattern offset).** The roster publishes the *team's* policy, not an individual's
-variation from it. The first implementation fired on absences *outside* the team's office days —
+variation from it. The first implementation fired on absences *outside* the team's office days -
 exactly backwards, since a shift worker's planned absence is *on* a team office day that isn't one
 of their own. Fixing it needed two separate inferences: that the person works different days from
 their team at all, and that *this weekday* isn't one they work. With only the first, the rule
@@ -147,7 +147,7 @@ excuses every absence that person ever has.
 **O2 (unreported absence).** "Three misses in ten scheduled days" is only meaningful at a
 particular attendance rate. At 60% the average person misses four of ten by chance, so the
 absolute rule labelled most of a team as an unreported absence. It now also requires the window
-rate to exceed the *team's own baseline* by a multiple — so the bucket means what it says: an
+rate to exceed the *team's own baseline* by a multiple - so the bucket means what it says: an
 outlier among peers.
 
 Both rules are deliberately tuned to **under-fire**. A false P8 or O2 moves waste out of the
@@ -167,15 +167,15 @@ Friday. Pooling those into one distribution drags the percentile down and sizes 
 on average and fails every Wednesday. Pooled sizing over-recovered by **75%**.
 
 **The floor is per unit.** An over-sized team must not be able to cancel out an under-sized one.
-28 units on the demo profile are under-sized — they need desks *added*, and they contribute zero
+28 units on the demo profile are under-sized - they need desks *added*, and they contribute zero
 to recovery rather than a negative.
 
 Two estimators are implemented and both reported:
 
-- **parametric** — daily demand as a Poisson-binomial, normal approximation, $\mu + z_p\sigma$.
+- **parametric** - daily demand as a Poisson-binomial, normal approximation, $\mu + z_p\sigma$.
   Stable at short horizons; shares its formula with the generator, so what it tests is the
   measurement chain from taps to desk-days rather than the statistics.
-- **empirical** — the observed quantile directly. Shares nothing with the generator, and is the
+- **empirical** - the observed quantile directly. Shares nothing with the generator, and is the
   honest control.
 
 ### 5. What is *not* added
@@ -184,13 +184,13 @@ The brief asks for a policy fraction of O1 and O4 to be added to recoverable cap
 not be, and this is the one place the implementation departs from the specification on purpose.
 
 A no-show consumes no desk. Their absence is therefore *already inside* the demand distribution the
-percentile is taken over — it has already pushed the percentile down, and the desk they didn't use
+percentile is taken over - it has already pushed the percentile down, and the desk they didn't use
 has already been counted as recoverable, once. Adding a fraction again double counts, in the
 flattering direction.
 
 O1 and O4 are still computed and reported, as a **behavioural opportunity** with the policy
 fractions visible, and kept out of the capacity number. Converting a chronic no-show to the sharing
-pool changes *who holds* a desk, not how many exist, and it pays off only if behaviour changes —
+pool changes *who holds* a desk, not how many exist, and it pays off only if behaviour changes -
 a management action with an uncertain return, which shouldn't be mixed into a lease decision with a
 certain one. A test asserts the two never merge. (ADR 3)
 
@@ -218,7 +218,7 @@ The only off-diagonal mass is the two inferred labels, and both limits are struc
 
 | Label | Recall | Precision | Why |
 |---|---|---|---|
-| P8 | 0.37 | 0.67 | 0.45 on three-day teams, **0.04 on four-day teams** — a shifted four-day pattern overlaps the original on three of its four days, and a five-day pattern is identical. No evidence in badge data separates those cases. |
+| P8 | 0.37 | 0.67 | 0.45 on three-day teams, **0.04 on four-day teams** - a shifted four-day pattern overlaps the original on three of its four days, and a five-day pattern is identical. No evidence in badge data separates those cases. |
 | O2 | 0.49 | 0.27 | A lagging classifier; 28 days is near its floor. |
 | O1 | 0.89 | 0.95 | Loses to O2 over-firing, which is the same trade. |
 
@@ -229,7 +229,7 @@ The only off-diagonal mass is the two inferred labels, and both limits are struc
 | **parametric** | 689 | **730** | **+5.9%** | 461,725 | 486,573 |
 | empirical | 689 | 941 | +36.6% | 461,725 | 622,982 |
 
-**Recovery rate 13.69%** (95% CI 11.90%–15.46%, bootstrapped over allocation units — resampled over
+**Recovery rate 13.69%** (95% CI 11.90%–15.46%, bootstrapped over allocation units - resampled over
 units rather than days, because every day was observed and the uncertainty is that a different draw
 of *units* would give a different total).
 
@@ -242,7 +242,7 @@ how much history a resizing decision needs.
 
 ![Recoverable capacity by city](docs/img/city_opportunity.png)
 
-City-level error is larger than the estate total, which is what aggregation is for — and is why a
+City-level error is larger than the estate total, which is what aggregation is for - and is why a
 per-city figure should carry its own interval before anyone acts on it.
 
 ### How much of the answer is a choice?
@@ -250,7 +250,7 @@ per-city figure should carry its own interval before anyone acts on it.
 ![Sensitivity heatmap](docs/img/sensitivity_heatmap.png)
 
 The same estate yields a **4.1%** recovery rate at P99 with a 20% buffer and **26.0%** at P75 with
-no buffer — a six-fold range, on identical data. Anyone presenting a single savings number without
+no buffer - a six-fold range, on identical data. Anyone presenting a single savings number without
 this behind it is presenting an opinion with a decimal point on it.
 
 ### The taxonomy at work
@@ -286,7 +286,7 @@ make test       # 48 tests, including one end-to-end
 
 - **The behavioural lever is reported, not added.** The brief's additive formula double counts,
   because a no-show's desk is already inside the demand distribution. The headline saving here is
-  smaller than the specification would produce — deliberately. (ADR 3)
+  smaller than the specification would produce - deliberately. (ADR 3)
 
 - **The plant is sized from realised demand, not from attendance propensities.** The first version
   computed the true requirement analytically from each member's propensity, which assumes nobody is
@@ -299,18 +299,18 @@ make test       # 48 tests, including one end-to-end
   accumulates, which is visible in the P8 and O2 recall figures rather than hidden. (ADR 4)
 
 - **Thresholds live in config and are checked across files.** `conf/sim.yaml` and
-  `dbt_project.yml` both carry the taxonomy thresholds, and a test — plus a pre-commit hook —
+  `dbt_project.yml` both carry the taxonomy thresholds, and a test - plus a pre-commit hook -
   fails if they disagree. A rule meaning 2.5 hours in one file and 3.0 in another produces two
   defensible taxonomies and no way to choose.
 
 - **Role scoping is enforced in the query layer, and columns are dropped rather than hidden.** A UI
   that filters rows it has already fetched is a layout choice that looks like access control until
-  someone exports the frame. A missing scope column is *refused*, not ignored — silently returning
+  someone exports the frame. A missing scope column is *refused*, not ignored - silently returning
   everything is the worst possible failure mode for an access rule.
 
 - **Exactly one Dagster asset is partitioned.** Generation, loading and dbt operate on the whole
   window and partitioning them would be decoration. The daily segmentation extract is genuinely
-  per-day, so it gets partitions, an atomic write, and an idempotency test — without which a
+  per-day, so it gets partitions, an atomic write, and an idempotency test - without which a
   backfill is a gamble.
 
 - **PDFs come from matplotlib, not an HTML-to-PDF engine.** WeasyPrint or a headless browser would
@@ -331,7 +331,7 @@ make test       # 48 tests, including one end-to-end
   source system that records them, not a cleverer classifier.
 
 - **The demand percentile treats all units alike.** A 200-person floor and a 6-person team should
-  not be sized at the same percentile — the small unit's demand is far noisier, and P90 on six
+  not be sized at the same percentile - the small unit's demand is far noisier, and P90 on six
   people is nearly its maximum. A production version would size by a prediction interval that
   widens with unit size, or pool small units into a shared pool rather than sizing them at all.
 
@@ -346,7 +346,7 @@ make test       # 48 tests, including one end-to-end
   theoretical saving in any given month is not actually available.
 
 - **No causal claim is made or should be.** This measures what capacity is unused. It does not
-  establish that removing it is free — teams grow, patterns shift, and a floor handed back is
+  establish that removing it is free - teams grow, patterns shift, and a floor handed back is
   expensive to get back. The sensitivity sweep is the closest thing here to a risk model, and it is
   not one.
 
