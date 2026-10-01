@@ -15,7 +15,7 @@ from absence_engine.capacity.model import bootstrap_recovery_ci, compute_recover
 from absence_engine.config import IMG_DIR, WAREHOUSE_PATH, load_config
 from absence_engine.reporting.scope import SCOPES, Role, apply_scope, scope_values
 
-st.set_page_config(page_title="Absence segmentation", page_icon="🪑", layout="wide")
+st.set_page_config(page_title="Absence segmentation", layout="wide")
 
 LABEL_HELP = {
     "P1": "Approved leave",
@@ -218,7 +218,6 @@ else:  # Space planner
         st.warning(
             f"{int(scoped['is_undersized'].sum())} unit(s) in scope are UNDER-sized: peak-day "
             "demand already exceeds the desks allocated. These need desks adding, not removing.",
-            icon="⚠️",
         )
 
 # --- Shared: the taxonomy --------------------------------------------------
